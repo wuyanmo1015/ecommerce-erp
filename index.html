@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6fed">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="进销存">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <title>电商订单进销存一体化工作台</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="side-brand">📦 进销存工作台</div>
+      <nav class="side-nav">
+        <button data-page="products" class="tab active">📦 商品档案</button>
+        <button data-page="orders" class="tab">🧾 订单录入</button>
+        <button data-page="inventory" class="tab">🏷️ 库存管理</button>
+        <button data-page="dashboard" class="tab">📊 统计看板</button>
+        <button data-page="logs" class="tab">📝 操作日志</button>
+        <button data-page="print" class="tab">🖨️ 发货单打印</button>
+        <button data-page="help" class="tab">❓ 使用说明</button>
+      </nav>
+      <div class="side-foot">
+        <label class="side-op">操作人</label>
+        <input id="operatorInput" type="text" placeholder="姓名" title="操作人将记入操作日志">
+        <div class="side-btns">
+          <button id="backupBtn" class="btn ghost" title="导出全部数据为JSON备份">⬇ 备份</button>
+          <button id="restoreBtn" class="btn ghost" title="从JSON备份恢复数据">⬆ 恢复</button>
+          <input id="restoreFile" type="file" accept="application/json" hidden>
+        </div>
+      </div>
+    </aside>
+
+    <div class="content">
+      <header class="mobilebar">
+        <button id="menuBtn" class="icon-btn" aria-label="菜单">☰</button>
+        <span class="mb-title">📦 进销存工作台</span>
+      </header>
+      <main>
+    <!-- 商品档案 -->
+    <section id="page-products" class="page active">
+      <div class="page-head">
+        <h2>商品档案</h2>
+        <div>
+          <button id="prodAddBtn" class="btn primary">＋ 新增商品</button>
+          <button id="prodExportBtn" class="btn">导出 Excel</button>
+        </div>
+      </div>
+      <div id="prodFormWrap" class="form-wrap hidden"></div>
+      <div id="prodTableContainer"></div>
+    </section>
+
+    <!-- 订单录入 -->
+    <section id="page-orders" class="page">
+      <div class="page-head">
+        <h2>订单录入</h2>
+        <div>
+          <button id="orderAddBtn" class="btn primary">＋ 新增订单</button>
+          <button id="orderExportBtn" class="btn">导出 Excel</button>
+        </div>
+      </div>
+      <div class="subtabs">
+        <button data-view="detail" class="subtab active">订单明细</button>
+        <button data-view="merge" class="subtab">合并订单（按单号）</button>
+      </div>
+      <div id="orderFormWrap" class="form-wrap hidden"></div>
+      <div id="orderTableContainer"></div>
+    </section>
+
+    <!-- 库存管理 -->
+    <section id="page-inventory" class="page">
+      <div class="page-head">
+        <h2>库存管理（库存台账）</h2>
+        <div>
+          <label class="check"><input type="checkbox" id="invOnlyLow"> 仅看库存不足</label>
+          <button id="invExportBtn" class="btn">导出 Excel</button>
+        </div>
+      </div>
+      <div id="invTableContainer"></div>
+    </section>
+
+    <!-- 统计看板 -->
+    <section id="page-dashboard" class="page">
+      <div class="page-head">
+        <h2>统计看板</h2>
+        <div class="dash-filter">
+          <label>周期：
+            <select id="dashPeriod">
+              <option value="today">今日</option>
+              <option value="7d">近7天</option>
+              <option value="30d" selected>近30天</option>
+              <option value="month">本月</option>
+              <option value="half1">上半年</option>
+              <option value="half2">下半年</option>
+              <option value="year">全年</option>
+              <option value="customMonth">指定月份</option>
+            </select>
+          </label>
+          <label class="hidden-input">年份：<input type="number" id="dashYear" value="2026" min="2000" max="2100" style="width:80px"></label>
+          <label class="hidden-input">月份：<input type="month" id="dashMonth" value="2026-08" style="width:140px"></label>
+          <label>平台：
+            <select id="dashPlatform">
+              <option value="全部">全部</option>
+              <option>1688</option><option>天猫</option><option>淘宝</option><option>京东</option><option>抖音</option><option>拼多多</option>
+            </select>
+          </label>
+          <button id="dashRefresh" class="btn">🔄 刷新</button>
+          <button id="dashExportBtn" class="btn">导出报表</button>
+        </div>
+      </div>
+      <div id="dashContainer"></div>
+      <div class="rule-note">统计规则：有效订单 = 状态为「正常待发货 / 已发货完成 / 退换处理中」的订单；「已退货入库」「作废订单」不计入销售额与利润。所有数据随订单、库存变动实时更新。</div>
+    </section>
+
+    <!-- 操作日志 -->
+    <section id="page-logs" class="page">
+      <div class="page-head">
+        <h2>操作日志</h2>
+        <div>
+          <label>类型：<select id="logTypeFilter"></select></label>
+          <button id="logExportBtn" class="btn">导出 Excel</button>
+        </div>
+      </div>
+      <div id="logTableContainer"></div>
+      <div class="rule-note">本页永久记录所有操作行为（新增/修改商品、新增/修改/删除订单、发货、退货、库存变动、数据导出等），含操作人、时间、修改前后内容。<b>不可删除、不可篡改</b>。</div>
+    </section>
+
+    <!-- 发货单打印 -->
+    <section id="page-print" class="page">
+      <div class="page-head">
+        <h2>发货单打印</h2>
+        <div class="dash-filter">
+          <label>店铺名称：<input type="text" id="printShopName" size="14"></label>
+          <label>选择订单：<select id="printOrderSelect"></select></label>
+          <button id="printDoBtn" class="btn primary">🖨 打印发货单</button>
+        </div>
+      </div>
+      <div id="printPreview" class="print-preview"></div>
+    </section>
+
+    <!-- 使用说明 -->
+    <section id="page-help" class="page">
+      <div class="help-doc">
+        <h2>新手使用说明</h2>
+        <p class="lead">本工作台为电商商家提供「商品建档 → 订单录入 → 发货/退货 → 库存联动 → 统计对账」的一体化闭环管理，数据保存在本机浏览器（localStorage），离线可用，建议定期点击右上角「备份数据」导出 JSON 以防丢失。</p>
+
+        <h3>一、核心操作流程</h3>
+        <ol>
+          <li><b>建档商品</b>：进入「商品档案」→ 点「＋新增商品」。填写建档日期、产品名称（唯一）、型号、尺寸、成本价、售价、初始库存、安全库存阈值。<b>单件利润 = 售价 − 成本价，系统自动计算，不可手改</b>。保存后该行即进入商品档案，作为订单选品的关键字。</li>
+          <li><b>录入订单</b>：进入「订单录入」→ 点「＋新增订单」。选择平台来源、填写/自动生成订单编号、选择产品名称后，<b>型号/尺寸/成本价/售价/单件利润自动带出</b>；填写数量后，<b>单品总利润、订单总金额自动核算</b>。</li>
+          <li><b>发货 / 退货</b>：
+            <ul>
+              <li>在订单行点「发货」→ 状态变「已发货完成」，<b>系统自动扣减对应商品库存</b>（数量=下单数量）。若当前库存不足，<b>禁止发货并弹窗提醒</b>。</li>
+              <li>点「退货」→ 状态变「已退货入库」，<b>系统自动回库</b>对应数量。</li>
+              <li>「作废」用于取消订单（<b>不触发库存变动</b>）；多品合并单请用相同「订单编号」录入多行，在「合并订单」视图查看整单汇总。</li>
+            </ul>
+            <p class="tip-inline">📊 统计口径：订单状态为【已发货完成、退换处理中】计入统计看板营收与利润；【已退货入库、作废订单】不计入销售额与利润。</p>
+          </li>
+          <li><b>查看统计报表</b>：进入「统计看板」，选择周期（今日/近7天/近30天/本月/半年/全年/指定月份）与平台，查看订单总量、销售总额、总利润、平台占比、销量排行；点「🔄刷新」实时更新，点「导出报表」导出 Excel。</li>
+        </ol>
+
+        <h3>二、各页面功能</h3>
+        <table class="help-table">
+          <tr><th>页面</th><th>功能</th></tr>
+          <tr><td>商品档案</td><td>商品主数据增删改；低于安全库存自动标红预警；支持导出 Excel。</td></tr>
+          <tr><td>订单录入</td><td>订单明细 / 合并订单双视图；选品联动、利润自动算；发货扣库存、退货回库存、超库存拦截；导出 Excel。</td></tr>
+          <tr><td>库存管理</td><td>库存台账独立页，实时展示库存、安全库存、预警状态；可勾选「仅看库存不足」。</td></tr>
+          <tr><td>统计看板</td><td>多维度自动汇总（今日/7天/30天/月/半年/年），平台占比、销量排行、月度营收趋势。</td></tr>
+          <tr><td>操作日志</td><td>永久记录所有操作（含修改前后），不可删除、不可篡改；可按类型筛选、导出。</td></tr>
+          <tr><td>发货单打印</td><td>标准发货单/拣货单模板，含订单号、平台、收件信息、产品明细、数量、快递；可直接打印，店铺名可改。</td></tr>
+        </table>
+
+        <h3>三、业务规则速查</h3>
+        <ul>
+          <li>单件利润、单品总利润、订单总金额、发货日期均为系统自动计算/填充字段，<b>已锁定不可手动篡改</b>。</li>
+          <li>当前库存仅随「发货（扣减）/ 退货（回库）」自动变动；<b>「作废订单」不触发库存变动</b>；如需修正盘点差异请用库存管理盘点调整；编辑商品档案时不可手动改当前库存。</li>
+          <li>手动修改商品档案里的<b>初始库存</b>不会触发库存联动，也不会自动生成操作日志；库存变动留痕仅来自订单发货、退货、库存管理盘点调整。</li>
+          <li>订单编号唯一；产品名称唯一；数量须为正整数；成本/售价 ≥ 0。</li>
+          <li>所有增删改与状态流转均记入操作日志，确保可追溯。</li>
+        </ul>
+        <p class="warn-tip">⚠️ <b>重要提醒：禁止在无痕（隐私）窗口使用本工作台！</b>无痕模式关闭浏览器后数据会被直接清空、无法找回。请定期点击右上角「备份数据」导出 JSON 文件妥善保存；换设备、清理浏览器缓存、重装系统前，<b>务必先备份</b>。数据仅存储在本机浏览器，云端不留存。</p>
+      </div>
+    </section>
+  </main>
+    </div><!-- /content -->
+  </div><!-- /app-shell -->
+
+  <div id="printArea" class="print-area"></div>
+  <div id="toast" class="toast"></div>
+  <div class="scrim" id="scrim"></div>
+
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    (function () {
+      var sb = document.getElementById('sidebar');
+      var scrim = document.getElementById('scrim');
+      var menuBtn = document.getElementById('menuBtn');
+      function closeSidebar() { if (sb) sb.classList.remove('open'); if (scrim) scrim.classList.remove('show'); }
+      if (menuBtn) menuBtn.addEventListener('click', function () {
+        if (sb.classList.contains('open')) closeSidebar(); else { sb.classList.add('open'); scrim.classList.add('show'); }
+      });
+      if (scrim) scrim.addEventListener('click', closeSidebar);
+      document.querySelectorAll('.tab').forEach(function (t) { t.addEventListener('click', closeSidebar); });
+    })();
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js').catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>
